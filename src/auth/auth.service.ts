@@ -45,20 +45,29 @@ export class AuthService {
   }
 
   async login(user: User) {
-    const generateToken = await this.generateToken(user);
-    await this.updateRefreshToken(generateToken.refreshToken, user._id);
-    return generateToken;
+    const accessToken = await this.generateAccessToken(user);
+
+    const refreshToken = this.jwtService.sign(user, { expiresIn: '1d' });
+    await this.updateRefreshToken(refreshToken, user._id);
+
+    return {
+      accessToken: accessToken,
+      refreshToken: refreshToken,
+    };
+  }
+
+  async logout(userId: string) {
+    if (!userId) throw new HttpException('User not found', 404);
+    await this.updateRefreshToken(null, userId);
   }
 
   async updateRefreshToken(refreshToken: string, userId: string) {
     return this.userService.updateRefreshToken(refreshToken, userId);
   }
 
-  async generateToken(user: User) {
+  async generateAccessToken(user: User) {
     const payload = { email: user.email, name: user.name, sub: user._id };
-    return {
-      accessToken: this.jwtService.sign(payload, { expiresIn: '15m' }),
-      refreshToken: this.jwtService.sign(payload, { expiresIn: '1d' }),
-    };
+    const token = this.jwtService.sign(payload, { expiresIn: '15m' });
+    return token;
   }
 }

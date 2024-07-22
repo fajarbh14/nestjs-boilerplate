@@ -58,14 +58,23 @@ export class AuthController {
   @Post('generate-token')
   @UseGuards(RtAuthGuard)
   async generateToken(@Req() request) {
+    console.log(request.user);
     const user = request.user;
-    const tokens = await this.authService.generateToken(user);
+    const tokens = await this.authService.generateAccessToken(user);
     return {
       message: 'Token generated successfully',
       data: {
-        accessToken: tokens.accessToken,
+        accessToken: tokens,
       },
     };
+  }
+
+  @Post('logout')
+  @UseGuards(RtAuthGuard)
+  async logout(@Req() request) {
+    const { sub } = request.user;
+    await this.authService.logout(sub);
+    return { message: 'User logged out successfully' };
   }
 
   @Get('current-user')
